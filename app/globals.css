@@ -1,0 +1,87 @@
+@layer theme, base, frosted_ui, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "@whop/react/styles.css" layer(frosted_ui);
+@import "@whop/frosted-ui/dist/index.css" layer(frosted_ui);
+
+/* biome-ignore lint/suspicious/noUnknownAtRules: this rule is imported from whop */
+@config '../tailwind.config.ts';
+
+body {
+	background: #0A0A0A;
+	color: #EAEAEA;
+	font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Custom styles for NEXA */
+.nexa-gradient-bg {
+	background: linear-gradient(90deg, #007BFF, #0056D1);
+}
+
+.nexa-glow {
+	box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+.nexa-gray-glow {
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02),
+				inset 0 0 20px rgba(255, 255, 255, 0.02);
+}
+
+.nexa-gray-glow-subtle {
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.01),
+				inset 0 0 15px rgba(255, 255, 255, 0.01);
+}
+
+.nexa-inner-glow {
+	background: radial-gradient(
+		ellipse at center,
+		rgba(255, 255, 255, 0.02) 0%,
+		rgba(255, 255, 255, 0.01) 40%,
+		transparent 70%
+	);
+}
+
+.nexa-border-glow {
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.01),
+				inset 0 0 20px rgba(255, 255, 255, 0.01);
+}
+
+.nexa-hover-inner-glow:hover {
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+				inset 0 0 90px rgba(255, 255, 255, 0.08);
+}
+
+.nexa-input-focus {
+	transition: all 0.3s ease;
+}
+
+.nexa-input-focus:focus {
+	border-color: #007BFF;
+	box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+}
+
+.nexa-card-shadow {
+	box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Smooth transitions */
+.nexa-transition {
+	transition: all 250ms ease;
+}
+
+.nexa-transition-slow {
+	transition: all 400ms ease;
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+	display: none;
+}
