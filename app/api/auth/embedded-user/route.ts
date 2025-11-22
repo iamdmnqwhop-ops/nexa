@@ -12,8 +12,6 @@ export async function GET() {
     return Response.json({
       id: user.id,
       username: user.username,
-      email: user.email,
-      avatar: user.avatar_url,
     });
 
   } catch (error) {

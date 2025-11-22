@@ -20,3 +20,6 @@
 ## Next Steps
 - Deploy to production.
 - Monitor logs for any `console.error` that might indicate issues.
+
+## Build Fixes
+- Fixed TypeScript error in `app/api/auth/embedded-user/route.ts` by removing `email` and `avatar_url` from the response, as they are not available in the `UserRetrieveResponse` type from `@whop/sdk`.
