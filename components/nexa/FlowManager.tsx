@@ -2,10 +2,10 @@
 
 import { useNexaFlow } from './hooks/useNexaFlow';
 import { IdeaInput } from './stages/IdeaInput';
-import { Refinement } from './stages/Refinement';
 import { ConceptSelection } from './stages/ConceptSelection';
 import { Progress } from './stages/Progress';
 import { ProductPreview } from './ProductPreview';
+import { ProductSpecPreview } from './stages/ProductSpecPreview';
 
 export const FlowManager = () => {
   const {
@@ -13,23 +13,27 @@ export const FlowManager = () => {
     idea,
     refinement,
     selectedConcept,
+    productSpec,
     product,
     isGenerating,
+    hasError,
     submitIdea,
-    selectConcept,
-    approveRefinement,
-    refineAgain,
+    selectOption,
+    generateProduct,
     reset,
-    startOver
+    startOver,
+    backToInput,
+    regenerateOptions
   } = useNexaFlow();
 
-  
+
+  // LINEAR PIPELINE: 4 sequential steps
   return (
     <>
-      {flowState === 'input' && (
+      {flowState === 'idea-input' && (
         <IdeaInput
           onSubmit={submitIdea}
-          onCancel={() => {}}
+          onCancel={() => { }}
           isGenerating={isGenerating}
         />
       )}
@@ -37,30 +41,51 @@ export const FlowManager = () => {
       {flowState === 'refining' && (
         <Progress
           stage="refining"
-          message="Analyzing your idea and generating strategic concepts..."
+          message="Refining your idea..."
+          hasError={hasError}
         />
       )}
 
       {flowState === 'concept-selection' && refinement && (
         <ConceptSelection
           concepts={refinement.Concepts}
-          onSelectConcept={selectConcept}
-          onRefine={refineAgain}
+          onSelectOption={selectOption}
           isGenerating={isGenerating}
+          onBack={backToInput}
+          onRegenerate={regenerateOptions}
+        />
+      )}
+
+      {flowState === 'product-preview' && productSpec && selectedConcept && (
+        <ProductSpecPreview
+          productSpec={productSpec}
+          selectedConcept={selectedConcept}
+          onGenerate={generateProduct}
+          onBack={() => {/* No going back in linear pipeline */ }}
+          isGenerating={isGenerating}
+        />
+      )}
+
+      {flowState === 'building-spec' && (
+        <Progress
+          stage="refining"
+          message="Building your product specification..."
+          hasError={hasError}
         />
       )}
 
       {flowState === 'generating' && (
         <Progress
           stage="generating"
-          message="Building your product..."
+          message="Building your complete product..."
+          hasError={hasError}
         />
       )}
 
       {flowState === 'complete' && product && (
         <ProductPreview
           product={product}
-          onBack={reset}
+          onBack={startOver}
         />
       )}
     </>

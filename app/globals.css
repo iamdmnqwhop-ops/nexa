@@ -5,75 +5,70 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 @import "@whop/react/styles.css" layer(frosted_ui);
 @import "@whop/frosted-ui/dist/index.css" layer(frosted_ui);
+@import "../styles/whop-glass.css" layer(utilities);
 
 /* biome-ignore lint/suspicious/noUnknownAtRules: this rule is imported from whop */
 @config '../tailwind.config.ts';
 
 body {
-	background: #0A0A0A;
+	background: #000000;
 	color: #EAEAEA;
 	font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow-x: hidden;
 }
 
 /* Custom styles for NEXA */
-.nexa-gradient-bg {
-	background: linear-gradient(90deg, #007BFF, #0056D1);
+.nexa-bg-mesh {
+    background-color: #000000;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(29, 78, 216, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(124, 58, 237, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(29, 78, 216, 0.15) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(124, 58, 237, 0.15) 0px, transparent 50%);
+    background-attachment: fixed;
 }
 
-.nexa-glow {
-	box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+.nexa-glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.nexa-gray-glow {
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02),
-				inset 0 0 20px rgba(255, 255, 255, 0.02);
+.nexa-glass-hover:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
-.nexa-gray-glow-subtle {
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.01),
-				inset 0 0 15px rgba(255, 255, 255, 0.01);
+.nexa-input-area {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
 }
 
-.nexa-inner-glow {
-	background: radial-gradient(
-		ellipse at center,
-		rgba(255, 255, 255, 0.02) 0%,
-		rgba(255, 255, 255, 0.01) 40%,
-		transparent 70%
-	);
+.nexa-input-area:focus-within {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
-.nexa-border-glow {
-	border: 1px solid rgba(255, 255, 255, 0.08);
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.01),
-				inset 0 0 20px rgba(255, 255, 255, 0.01);
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
 }
 
-.nexa-hover-inner-glow:hover {
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-				inset 0 0 90px rgba(255, 255, 255, 0.08);
+.animate-float {
+    animation: float 6s ease-in-out infinite;
 }
 
-.nexa-input-focus {
-	transition: all 0.3s ease;
+@keyframes pulse-glow {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
 }
 
-.nexa-input-focus:focus {
-	border-color: #007BFF;
-	box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
-}
-
-.nexa-card-shadow {
-	box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
-}
-
-/* Smooth transitions */
-.nexa-transition {
-	transition: all 250ms ease;
-}
-
-.nexa-transition-slow {
-	transition: all 400ms ease;
+.animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
 }
 
 /* Hide scrollbar but keep functionality */

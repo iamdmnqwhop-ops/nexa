@@ -1,73 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { supabase } from '@/lib/supabase';
-import { Database } from '@/lib/supabase';
+import { REFINEMENT_PROMPT } from '@/lib/prompts';
+import { whopsdk } from '@/lib/whop-sdk';
+import { headers } from 'next/headers';
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-// Refinement prompt template
-const REFINEMENT_PROMPT = `
-You are NEXA, an elite product strategist who transforms raw ideas into hyper-specific, commercially viable digital products using a unique 3-Layer positioning method.
-
-You must analyze the user's idea and generate 4-5 distinct product concepts, each exploring different Layer 3 Unique Value Zones.
-
-For each concept, analyze through three critical layers:
-- Layer 1: Industry (broad market category)
-- Layer 2: Niche (specific audience/subcategory)
-- Layer 3: Unique Value Zone (the ultra-specific angle, transformation, or micro-problem that competitors ignore)
-
-Your goal is to create multiple Third Layer Unique Value Zones that each create a blue-ocean product concept - something so specific and compelling that it eliminates competition.
-
-Return a JSON object with exactly these fields:
-{
-  "Concepts": [
-    {
-      "Id": "concept_1",
-      "Title": "Compelling title that directly reflects the Layer 3 Unique Value Zone",
-      "TargetAudience": "Ultra-specific demographic with detailed pain points",
-      "CoreGoal": "Specific, measurable transformation (include numbers: X% in Y days)",
-      "Tone": "Writing style (professional/expert, encouraging/coaching, direct/no-fluff, academic/research-backed)",
-      "ProductAngle": "Unique positioning based on Layer 3 - what competitors completely miss",
-      "ProductType": "Choose one: guide/handbook, workbook/template, mini-course, toolkit, or framework",
-      "KeyPainPoints": ["3-5 specific struggles this audience faces that competitors ignore"],
-      "UniqueValue": "Why this Unique Value Zone is 10x better than generic solutions",
-      "TargetOutcome": "Exact results users can expect",
-      "Layers": {
-        "Layer1": "Industry category",
-        "Layer2": "Specific niche audience",
-        "Layer3": "Unique Value Zone - the micro-problem/angle you'll dominate"
-      }
-    }
-  ]
-}
-
-Critical Analysis Questions (for EACH concept):
-1. What's the broad industry? (Layer 1)
-2. Who is the most profitable, underserved niche? (Layer 2)
-3. What specific micro-problem or transformation does this niche desperately want that NO ONE is addressing properly? (Layer 3 - This is your Unique Value Zone)
-4. What makes this Unique Value Zone emotionally compelling and immediately valuable?
-5. Why would someone pay $47-497 for THIS specific solution instead of free alternatives?
-
-DIVERSITY REQUIREMENTS:
-- Each concept must target a DIFFERENT niche audience or solve a DIFFERENT micro-problem
-- Each concept must have a unique Layer 3 Unique Value Zone
-- Vary the product types (mix of guides, workbooks, courses, etc.)
-- Vary the tones (professional, coaching, direct, etc.)
-- Show different angles and approaches to the original idea
-
-Third Layer Unique Value Zone Examples:
-- "fitness" → "postpartum moms" → "naturally rebuild diastasis recti in 30 days without surgery"
-- "business" → "freelance writers" → "use AI to 10x output and charge premium rates"
-- "dating" → "introverted men 30-40" → "attract quality women through authentic conversation, not pickup lines"
-- "productivity" → "remote workers" → "eliminate zoom fatigue and reclaim 2 hours daily"
-
-Each Layer 3 Unique Value Zone must directly influence ALL other fields. Each concept should feel like a revelation - something that makes the user think "Finally, someone understands MY exact problem!"
-
-IMPORTANT: Generate exactly 4-5 unique, distinct concepts. Do not repeat similar niches or approaches.
-
-User's idea:
-`;
+// Helper functions removed as they are no longer used
 
 export async function POST(request: NextRequest) {
   try {
@@ -82,16 +22,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Add Whop authentication verification
-    // const authHeader = request.headers.get('authorization');
-    // Get user ID from Whop SDK here
-    const userId = 'temp-user-id'; // Replace with actual user ID from Whop
+    // Whop Authentication
+    let userId = 'anonymous';
+    try {
+      const { userId: whopUserId } = await whopsdk.verifyUserToken(await headers());
+      userId = whopUserId;
+    } catch (authError) {
+      console.log('Auth check failed, proceeding as anonymous/dev for now (or handle as 401)');
+      // For strict production: return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Call Gemini API with retry logic
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    // ... (rest of the function)
     const prompt = REFINEMENT_PROMPT + idea.trim();
 
-    let result, response, text;
+    let result, response;
+    let text = '';
     let retryCount = 0;
     const maxRetries = 3;
 
@@ -116,85 +63,98 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Extract JSON from response
-    let refinementData;
+    // Parse plain text response from new v0.1 prompt format
+    let refinementData = { Concepts: [] as any[] };
+
     try {
-      // Clean up the response to ensure valid JSON
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in response');
+      console.log("Raw Gemini response:", text); // Debug logging
+
+      // Regex to split by options (A, B, C, D)
+      const optionRegex = /REFINED OPTION ([A-D]):([\s\S]*?)(?=REFINED OPTION [A-D]:|$)/g;
+      let match;
+
+      while ((match = optionRegex.exec(text)) !== null) {
+        const letter = match[1];
+        const content = match[2];
+
+        const extractField = (fieldName: string) => {
+          const fieldRegex = new RegExp(`${fieldName}:\\s*(.*)`, 'i');
+          const fieldMatch = content.match(fieldRegex);
+          return fieldMatch ? fieldMatch[1].trim() : "Not found";
+        };
+
+        // Generate multiple pain points from the Core Pain
+        const corePain = extractField("Core Pain");
+        const painPoints = [
+          corePain,
+          `Lack of clear strategy for ${extractField("Transformation").toLowerCase()}`,
+          `Difficulty implementing ${extractField("Angle").toLowerCase()}`,
+          `Overwhelmed by generic advice that doesn't work for ${extractField("Audience").toLowerCase()}`
+        ];
+
+        refinementData.Concepts.push({
+          OptionLetter: letter,
+          Id: `option_${letter.toLowerCase()}`,
+          Title: extractField("Title"),
+          TargetAudience: extractField("Audience"),
+          CoreGoal: corePain,
+          Tone: "Expert, direct, tactical", // Default tone from prompt
+          ProductAngle: extractField("Angle"),
+          ProductType: "Guide", // Default type
+          KeyPainPoints: painPoints, // Now 4 pain points
+          UniqueValue: extractField("Unique Value Zone"),
+          TargetOutcome: extractField("Transformation"),
+          Layers: {
+            Layer1: "Industry", // Placeholder
+            Layer2: extractField("Audience"),
+            Layer3: extractField("Unique Value Zone")
+          },
+          SignatureFrameworkName: extractField("Signature Framework Name")
+        });
       }
-      refinementData = JSON.parse(jsonMatch[0]);
+
     } catch (parseError) {
-      console.error('Failed to parse Gemini response:', parseError);
+      console.error('Failed to parse plain text response:', parseError);
+      console.error('Raw response:', text);
       return NextResponse.json(
         { error: 'Failed to process idea. Please try again.' },
         { status: 500 }
       );
     }
 
-    // Validate the response structure
-    if (!refinementData.Concepts || !Array.isArray(refinementData.Concepts)) {
-      console.error('No Concepts array found in response');
+    if (!refinementData.Concepts || refinementData.Concepts.length === 0) {
       return NextResponse.json(
-        { error: 'Invalid refinement format generated. Please try again.' },
+        { error: 'Failed to parse AI response. Please try again.' },
         { status: 500 }
       );
     }
 
-    if (refinementData.Concepts.length < 3) {
-      console.error('Not enough concepts generated:', refinementData.Concepts.length);
+    // ENFORCEMENT: Always return exactly 4 options (A-D)
+    // No bypass - if less than 4, error out
+    if (refinementData.Concepts.length !== 4) {
+      console.error(`Expected exactly 4 concepts, got ${refinementData.Concepts.length}`);
       return NextResponse.json(
-        { error: 'Insufficient concepts generated. Please try again.' },
-        { status: 500 }
+        {
+          error: `System requires exactly 4 refined concepts. Generated ${refinementData.Concepts.length}. Please try again.`,
+          retry: true
+        },
+        { status: 422 }
       );
     }
 
-    // Validate each concept
-    const requiredFields = ['Title', 'TargetAudience', 'CoreGoal', 'Tone', 'ProductAngle', 'ProductType', 'KeyPainPoints', 'UniqueValue', 'TargetOutcome'];
+    // Force A-D labeling
+    const optionsWithLetters = refinementData.Concepts.map((concept: any, index: number) => ({
+      ...concept,
+      OptionLetter: String.fromCharCode(65 + index), // A, B, C, D
+      Id: `option_${String.fromCharCode(65 + index).toLowerCase()}` // option_a, option_b, etc.
+    }));
 
-    for (let i = 0; i < refinementData.Concepts.length; i++) {
-      const concept = refinementData.Concepts[i];
-      const missingFields = requiredFields.filter(field => !concept[field]);
-
-      if (missingFields.length > 0) {
-        console.error(`Missing fields in concept ${i + 1}:`, missingFields);
-        return NextResponse.json(
-          { error: `Incomplete concept ${i + 1} generated. Please try again.` },
-          { status: 500 }
-        );
-      }
-    }
-
-    // Save to Supabase - DISABLED FOR TESTING
-  // TODO: Re-enable when Supabase connection is stable
-  /*
-  try {
-    console.log('Saving to Supabase (optional)...');
-
-    const { data: insertedData, error: dbError } = await supabase
-      .from('ideas')
-      .insert({
-        user_id: userId,
-        raw_idea: idea,
-        refinement: refinementData,
-      })
-      .select()
-      .single();
-
-    if (!dbError) {
-      console.log('✓ Saved to database');
-    }
-  } catch (supabaseError) {
-    console.log('⚠️ Database unavailable - continuing without saving');
-    // Don't block the response - database is optional for now
-  }
-  */
-
-    // Return successful response
+    // Return successful response with enforced 4 options
     return NextResponse.json({
       success: true,
-      data: refinementData
+      data: {
+        Concepts: optionsWithLetters
+      }
     });
 
   } catch (error) {

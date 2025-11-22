@@ -1,128 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { supabase } from '@/lib/supabase';
+import { GENERATION_PROMPT } from '@/lib/prompts';
+import { whopsdk } from '@/lib/whop-sdk';
+import { headers } from 'next/headers';
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-// Generation prompt template
-const GENERATION_PROMPT = `
-You are a premium content creator specializing in creating comprehensive, high-value digital products worth $47-497.
-
-CRITICAL MISSION: Create content about the USER'S EXACT CONCEPT from their Layer 3 UVZ. This is the most important requirement - center everything on their specific topic, not on NEXA branding.
-
-PRIORITY #1: USER CONCEPT OVER BRANDING
-- The content must be about the user's exact Layer 3 UVZ topic
-- Do NOT create NEXA-branded frameworks or systems
-- Use the user's topic as the central theme throughout
-- If user's Layer 3 is about fitness, create fitness content. If it's about budgeting, create budgeting content.
-- Honor the user's specific audience and pain points exactly as described
-
-CONTENT REQUIREMENTS:
-- Write at a PAID, premium course/guide level - no fluff, no generic advice
-- Total content: 4,000-5,000 words (each section 500-700 words)
-- Include specific examples, case studies with real results, data points, and research citations
-- Create actionable frameworks and step-by-step systems related to the USER'S topic
-- Use industry-specific terminology that demonstrates expertise in the USER'S field
-- Provide worksheets, checklists, templates, and exercises for the USER'S specific topic
-
-CONTENT STRUCTURE - Follow the User Journey Logic:
-1. **Awareness** - Hook with their biggest pain point related to their specific topic
-2. **Realization** - Show them why current approaches fail in their specific area
-3. **Solution** - Introduce practical systems based on their specific Layer 3 UVZ topic
-4. **Execution** - Detailed implementation for their specific topic/audience
-5. **Mastery** - Advanced strategies for their specific topic
-
-PRODUCT TEMPLATES BY FORMAT:
-
-FOR GUIDES/HANDBOOKS (FormatIntent: "Guide"):
-1. Introduction: Why the user's specific topic matters, expose industry myths in THEIR field
-2. Foundation: The science/principles behind approaches to THEIR specific topic
-3. Implementation: Step-by-step system for THEIR specific topic
-4. Advanced: Level-up techniques for THEIR specific topic
-5. Case Studies: Real examples related to THEIR specific topic
-6. Tools & Resources: Tools and templates for THEIR specific topic
-7. Troubleshooting: Solutions for common challenges in THEIR specific area
-8. Measurement: How to track progress for THEIR specific goals
-
-FOR WORKBOOKS (FormatIntent: "Workbook"):
-1. Getting Started: How to use this workbook for maximum results
-2. Self-Assessment: Diagnostic exercises to identify current state vs desired state
-3. Core Framework: Fill-in-the-blank templates for your unique system
-4. Examples: Multiple completed examples showing different scenarios
-5. Customization: How to adapt for different situations/contexts
-6. Implementation: Action plan with 30/60/90 day timelines
-7. Review: Quality assurance checklist and refinement process
-
-FOR COURSES (FormatIntent: "Course"):
-1. Module 1: Fundamentals - Core concepts and industry secrets
-2. Module 2: Framework - Your proprietary system explained
-3. Module 3: Implementation - Hands-on exercises and case studies
-4. Module 4: Advanced - Expert techniques and optimization
-5. Module 5: Mastery - Troubleshooting and next-level strategies
-6. Module 6: Capstone - Complete project putting everything together
-
-PREMIUM WRITING STANDARDS:
-- Cite specific studies: "According to Harvard Business Review (2023)..."
-- Include expert quotes: "As Dr. Sarah Chen notes..."
-- Provide concrete metrics: "increase conversion by 37%", "save 2.3 hours daily"
-- Create proprietary frameworks: "The RAPID Method", "The SCALE System"
-- Use psychological triggers and emotional storytelling
-- Add warning boxes: "Critical Warning: Most people fail here because..."
-- Include "Insider Secret" boxes with non-obvious insights
-- Write with authority and confidence of someone who charges $500/hour
-
-FORMAT REQUIREMENTS:
-!! CRITICAL: RETURN AS PLAIN TEXT - NOT JSON !!
-- DO NOT use JSON format, DO NOT use code blocks, DO NOT use backticks with json
-- Return as simple plain text that can be parsed easily
-- Start immediately with TITLE: [your title]
-- Use clear section headers with "## " prefix only
-- Content should be written as if it's a $297 digital product
-- Each section builds on the previous one
-- Include calls to action for exercises and implementation
-- Make the Unique Value Zone (Layer 3) the central theme throughout
-
-ABSOLUTELY NO JSON FORMAT - RETURN AS PLAIN TEXT ONLY
-
-Format:
-TITLE: [Your compelling title here]
-SUMMARY: [Detailed summary of transformation and outcomes]
-READING_TIME: [Estimated reading time like '45-60 minutes']
-FORMAT: [Guide/Workbook/Course]
-
-## Section 1: [Benefit-driven heading]
-[1500-2000 words of premium content - be extremely detailed and comprehensive]
-
-## Section 2: [Benefit-driven heading]
-[1500-2000 words of premium content - be extremely detailed and comprehensive]
-
-## Section 3: [Benefit-driven heading]
-[1500-2000 words of premium content - be extremely detailed and comprehensive]
-
-## Section 4: [Benefit-driven heading]
-[1500-2000 words of premium content - be extremely detailed and comprehensive]
-
-## Section 5: [Benefit-driven heading]
-[1500-2000 words of premium content - be extremely detailed and comprehensive]
-
-## Section 6: [Benefit-driven heading]
-[1500-2000 words of premium content - be extremely detailed and comprehensive]
-
-CRITICAL: Each section must be 1500-2000 words minimum. This is a premium digital product worth $297, not a blog post. Go extremely deep into every aspect, include multiple examples, case studies, step-by-step tutorials, worksheets, and actionable exercises.
-
-Refined concept:
-`;
-
 export async function POST(request: NextRequest) {
   try {
-    // Get the request body
-    const { refinement } = await request.json();
+    // Verify Whop Auth
+    try {
+      await whopsdk.verifyUserToken(await headers());
+    } catch (e) {
+      console.log('Auth check failed in generate-product');
+      // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // Validate input
-    if (!refinement || typeof refinement !== 'object') {
+    // Get the request body - now expects product_spec only
+    const { product_spec } = await request.json();
+
+    // ENFORCEMENT: Only accept validated product_spec objects
+    // No more direct concept acceptance - must come from choose-option API
+    if (!product_spec || typeof product_spec !== 'object') {
       return NextResponse.json(
-        { error: 'Invalid refinement data' },
+        {
+          error: 'Product specification required. Please complete concept selection first.',
+          code: 'MISSING_PRODUCT_SPEC'
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate required product_spec fields
+    const requiredFields = ['title', 'audience', 'pain_points', 'unique_value', 'angle', 'tone', 'product_type', 'transformation'];
+    const missingSpecFields = requiredFields.filter(field => !product_spec[field]);
+
+    if (missingSpecFields.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Invalid product specification. Missing: ${missingSpecFields.join(', ')}`,
+          code: 'INVALID_PRODUCT_SPEC'
+        },
         { status: 400 }
       );
     }
@@ -144,10 +63,14 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    const prompt = GENERATION_PROMPT + JSON.stringify(refinement, null, 2);
+    // ENFORCEMENT: product_spec must be pre-validated from choose-option API
+    // No more transformation logic - all concepts must be validated first
+
+    const prompt = GENERATION_PROMPT + JSON.stringify(product_spec, null, 2);
 
     console.log('Generating product...');
-    let result, response, text;
+    let result, response;
+    let text = '';
     let retryCount = 0;
     const maxRetries = 3;
 
@@ -160,7 +83,7 @@ export async function POST(request: NextRequest) {
         break; // Success, exit retry loop
       } catch (error) {
         retryCount++;
-        console.error(`Generation attempt ${retryCount} failed:`, error.message);
+        console.error(`Generation attempt ${retryCount} failed:`, (error as Error).message);
 
         if (retryCount >= maxRetries) {
           throw error; // Re-throw after last attempt
@@ -261,24 +184,27 @@ export async function POST(request: NextRequest) {
       console.log(`Parsed ${sections.length} sections from text response`);
 
     } catch (parseError) {
-      console.error('Text parsing error:', parseError.message);
+      console.error('Text parsing error:', (parseError as Error).message);
       return NextResponse.json(
         {
           error: 'Failed to parse AI response. Please try again.',
-          details: parseError.message
+          details: (parseError as Error).message
         },
         { status: 500 }
       );
     }
 
     // Validate the response structure
-    const requiredFields = ['Title', 'Summary', 'EstimatedReadingTime', 'Sections'];
-    const missingFields = requiredFields.filter(field => !productData[field]);
+    const productRequiredFields = ['Title', 'Summary', 'EstimatedReadingTime', 'Sections'];
+    const missingProductFields = productRequiredFields.filter(field => !productData[field]);
 
-    if (missingFields.length > 0 || !Array.isArray(productData.Sections)) {
-      console.error('Invalid product structure:', missingFields);
+    if (missingProductFields.length > 0 || !Array.isArray(productData.Sections)) {
+      console.error('Invalid product structure:', missingProductFields);
       return NextResponse.json(
-        { error: 'Invalid product structure generated. Please try again.' },
+        {
+          error: `Invalid product structure generated. Missing: ${missingProductFields.join(', ')}`,
+          missing_fields: missingProductFields
+        },
         { status: 500 }
       );
     }
@@ -296,28 +222,6 @@ export async function POST(request: NextRequest) {
       Heading: section.Heading || `Section ${index + 1}`,
       Content: section.Content || 'Content pending.'
     }));
-
-    // Save to Supabase - DISABLED FOR TESTING
-    // TODO: Re-enable when Supabase connection is stable
-    /*
-    try {
-      const { error: dbError } = await supabase
-        .from('ideas')
-        .update({
-          product: productData,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId)
-        .eq('refinement', JSON.stringify(refinement));
-
-      if (!dbError) {
-        console.log('✓ Product saved to database');
-      }
-    } catch (dbError) {
-      console.log('⚠️ Could not save to database - returning result anyway');
-      // Continue - database is optional for testing
-    }
-    */
 
     // Return successful response
     return NextResponse.json({

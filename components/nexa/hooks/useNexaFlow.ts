@@ -36,95 +36,140 @@ export interface ProductData {
   EstimatedReadingTime: string;
 }
 
-type FlowState = 'input' | 'refining' | 'concept-selection' | 'generating' | 'complete';
+export interface ProductSpec {
+  title: string;
+  audience: string;
+  core_problem: string;
+  transformation: string;
+  unique_value: string;
+  angle: string;
+  use_cases: string[];
+  pain_points: string[];
+  signature_framework_name: string;
+  tone: string;
+  product_type: string;
+  selected_option: string;
+  original_idea: string;
+  concept_id: string;
+}
+
+// LINEAR PIPELINE: Only 4 sequential steps
+type FlowState = 'idea-input' | 'refining' | 'concept-selection' | 'building-spec' | 'product-preview' | 'generating' | 'complete';
 
 export const useNexaFlow = () => {
-  const [flowState, setFlowState] = useState<FlowState>('input');
+  const [flowState, setFlowState] = useState<FlowState>('idea-input');
   const [idea, setIdea] = useState('');
   const [refinement, setRefinement] = useState<RefinementData | null>(null);
   const [selectedConcept, setSelectedConcept] = useState<ConceptData | null>(null);
+  const [productSpec, setProductSpec] = useState<ProductSpec | null>(null);
   const [product, setProduct] = useState<ProductData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
-  const submitIdea = async (ideaText: string, needsRefinement: boolean) => {
+  // LINEAR PIPELINE: Only refinement, no bypass
+  const submitIdea = async (ideaText: string) => {
+    if (!ideaText.trim()) return;
+
     setIdea(ideaText);
     setIsGenerating(true);
+    setHasError(false); // Reset error state
+    setFlowState('refining'); // Show progress while refining
 
-    if (needsRefinement) {
-      setFlowState('refining');
-      try {
-        // Call refine-idea API
-        const response = await fetch('/api/refine-idea', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ idea: ideaText }),
-        });
+    try {
+      // ENFORCEMENT: Always call refine-idea API - no direct generation bypass
+      const response = await fetch('/api/refine-idea', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idea: ideaText }),
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to refine idea');
-        }
-
-        setRefinement(data.data);
-        setFlowState('concept-selection');
-      } catch (error) {
-        console.error('Error refining idea:', error);
-        // Show error message
-        alert('Failed to refine your idea. Please try again.');
-        setFlowState('input');
-      } finally {
-        setIsGenerating(false);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to refine idea');
       }
-    } else {
-      // Direct to generation - use the user's exact idea as-is
-      const directConcept: ConceptData = {
-        Id: 'direct_concept',
-        Title: ideaText.trim(), // Use exact idea as title
-        TargetAudience: ideaText, // Let Gemini figure out audience from the idea
-        CoreGoal: ideaText, // Let Gemini figure out goal from the idea
-        Tone: 'professional/expert',
-        ProductAngle: 'Direct implementation of user\'s exact concept',
-        ProductType: 'guide/handbook',
-        KeyPainPoints: ['Challenges addressed in the original idea'],
-        UniqueValue: 'This product is based directly on the user\'s specific concept and requirements',
-        TargetOutcome: 'Achieve the goals described in the original idea',
-        Layers: {
-          Layer1: 'Based on user\'s concept',
-          Layer2: 'Based on user\'s concept',
-          Layer3: ideaText.trim() // Use exact idea as Layer 3 UVZ
-        }
-      };
 
-      const basicRefinement: RefinementData = {
-        Concepts: [directConcept]
-      };
-
-      setRefinement(basicRefinement);
-      setSelectedConcept(directConcept);
-      await generateProduct(directConcept);
+      setRefinement(data.data);
+      setFlowState('concept-selection'); // Move to selection after refinement completes
+    } catch (error: any) {
+      console.error('Error refining idea:', error);
+      setHasError(true);
+      alert(error?.message || 'Failed to refine your idea. Please try again.');
+      setFlowState('idea-input');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const selectConcept = async (concept: ConceptData) => {
-    setSelectedConcept(concept);
-    await generateProduct(concept);
-  };
+  // LINEAR PIPELINE: Choose option -> Build Product Spec -> Generation
+  const selectOption = async (optionLetter: string) => {
+    if (!refinement || !optionLetter || !['A', 'B', 'C', 'D'].includes(optionLetter)) {
+      alert('Invalid selection. Please choose A, B, C, or D.');
+      return;
+    }
 
-  const generateProduct = async (concept: ConceptData) => {
-    setFlowState('generating');
     setIsGenerating(true);
+    setHasError(false); // Reset error state
+    setSelectedConcept(refinement.Concepts[optionLetter.charCodeAt(0) - 65]);
+    setFlowState('building-spec'); // Show progress during spec building
 
     try {
-      // Call generate-product API
+      // ENFORCEMENT: Must call build-product-spec API to create engineered product_spec
+      const response = await fetch('/api/build-product-spec', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          selectedOption: optionLetter,
+          originalIdea: idea,
+          refinementData: refinement
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        // Handle validation errors specifically
+        if (data.code === 'SPEC_BUILD_ERROR' || data.code === 'INVALID_SELECTION') {
+          throw new Error(data.error || 'Product specification failed validation. Please try a different option.');
+        }
+        throw new Error(data.error || 'Failed to build product specification.');
+      }
+
+      setProductSpec(data.data.product_spec);
+      setFlowState('product-preview'); // Show engineered spec before generation
+    } catch (error: any) {
+      console.error('Error building product spec:', error);
+      setHasError(true);
+      alert(error?.message || 'Failed to build product specification. Please try selecting a different option.');
+      setFlowState('concept-selection'); // Go back to selection on error
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // LINEAR PIPELINE: Only generate from validated product_spec
+  const generateProduct = async () => {
+    if (!productSpec) {
+      alert('No product specification available. Please complete concept selection first.');
+      return;
+    }
+
+    setFlowState('generating');
+    setIsGenerating(true);
+    setHasError(false); // Reset error state
+
+    try {
+      // ENFORCEMENT: Call generate-product API with product_spec only
       const response = await fetch('/api/generate-product', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ refinement: concept }),
+        body: JSON.stringify({ product_spec: productSpec }),
       });
 
       const data = await response.json();
@@ -135,45 +180,23 @@ export const useNexaFlow = () => {
 
       setProduct(data.data);
       setFlowState('complete');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating product:', error);
-
-      // Better error message with specific guidance
-      let errorMessage = 'Failed to generate your product.';
-      if (error.message.includes('Content too long') || error.message.includes('truncated')) {
-        errorMessage = 'Product content was too long. Please try selecting a different concept or contact support for assistance.';
-      } else if (error.message.includes('JSON parsing failed')) {
-        errorMessage = 'Product format was invalid. Please try selecting a different concept or contact support.';
-      } else {
-        errorMessage = `Product generation failed: ${error.message}. Please try selecting a different concept.`;
-      }
-
-      alert(errorMessage);
-
-      // Always go back to concept selection on error so users can try a different concept
-      setFlowState('concept-selection');
+      setHasError(true);
+      alert(error?.message || 'Failed to generate product. Please try again.');
+      setFlowState('product-preview'); // Go back to preview to retry
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const approveRefinement = async () => {
-    if (selectedConcept) {
-      await generateProduct(selectedConcept);
-    }
-  };
-
-  const refineAgain = () => {
-    setFlowState('input');
-    setRefinement(null);
-    setSelectedConcept(null);
-  };
-
+  // Clean up state
   const reset = () => {
-    setFlowState('input');
+    setFlowState('idea-input');
     setIdea('');
     setRefinement(null);
     setSelectedConcept(null);
+    setProductSpec(null);
     setProduct(null);
   };
 
@@ -181,18 +204,29 @@ export const useNexaFlow = () => {
     reset();
   };
 
+  const backToInput = () => {
+    setFlowState('idea-input');
+  };
+
+  const regenerateOptions = () => {
+    submitIdea(idea);
+  };
+
   return {
     flowState,
     idea,
     refinement,
     selectedConcept,
+    productSpec,
     product,
     isGenerating,
-    submitIdea,
-    selectConcept,
-    approveRefinement,
-    refineAgain,
+    hasError,
+    submitIdea,           // Only takes idea, no needsRefinement boolean
+    selectOption,         // New: takes A, B, C, D
+    generateProduct,      // New: generates from productSpec
     reset,
-    startOver
+    startOver,
+    backToInput,          // New: go back to edit idea
+    regenerateOptions     // New: retry generation with same idea
   };
 };
