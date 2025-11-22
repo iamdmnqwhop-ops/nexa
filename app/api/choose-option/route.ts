@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     // Validate the product_spec before returning
     const requiredFields = ['title', 'audience', 'pain_points', 'unique_value', 'product_angle', 'tone', 'product_type', 'target_outcome'];
-    const missingFields = requiredFields.filter(field => !product_spec[field]);
+    const missingFields = requiredFields.filter(field => !(product_spec as any)[field]);
 
     if (missingFields.length > 0) {
       return NextResponse.json(
