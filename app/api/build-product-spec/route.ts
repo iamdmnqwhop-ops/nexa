@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     try {
       await whopsdk.verifyUserToken(await headers());
     } catch (e) {
-      console.log('Auth check failed in build-product-spec');
+      // console.log('Auth check failed in build-product-spec');
       // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -78,7 +78,7 @@ ${JSON.stringify(selectedConcept, null, 2)}`;
 
     const prompt = SPEC_BUILDER_PROMPT + '\n\n' + builderInput;
 
-    console.log('Building product spec for option:', selectedOption);
+    // console.log('Building product spec for option:', selectedOption);
 
     let result, response, text;
     let retryCount = 0;
@@ -89,7 +89,7 @@ ${JSON.stringify(selectedConcept, null, 2)}`;
         result = await model.generateContent(prompt);
         response = await result.response;
         text = response.text();
-        console.log(`✓ Product spec built on attempt ${retryCount + 1}`);
+        // console.log(`✓ Product spec built on attempt ${retryCount + 1}`);
         break;
       } catch (error) {
         retryCount++;
@@ -100,7 +100,7 @@ ${JSON.stringify(selectedConcept, null, 2)}`;
         }
 
         const delay = Math.pow(2, retryCount) * 1000;
-        console.log(`Retrying in ${delay}ms...`);
+        // console.log(`Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -145,11 +145,13 @@ ${JSON.stringify(selectedConcept, null, 2)}`;
       const painPointsArray = fields.pain_points.split('\n').filter(p => p.trim()).slice(0, 6);
 
       // Debug logging to see what Gemini generates
+      /*
       console.log('=== PAIN POINTS DEBUG ===');
       console.log('Raw pain_points field:', JSON.stringify(fields.pain_points));
       console.log('After split and filter:', painPointsArray);
       console.log('Length:', painPointsArray.length);
       console.log('======================');
+      */
 
       if (painPointsArray.length < 3) {
         throw new Error(`Must have 3-6 pain points. Only got ${painPointsArray.length}. Raw: "${fields.pain_points}"`);
@@ -158,11 +160,13 @@ ${JSON.stringify(selectedConcept, null, 2)}`;
       const useCasesArray = fields.use_cases.split('\n').filter(u => u.trim()).slice(0, 6);
 
       // Debug logging for use cases
+      /*
       console.log('=== USE CASES DEBUG ===');
       console.log('Raw use_cases field:', JSON.stringify(fields.use_cases));
       console.log('After split and filter:', useCasesArray);
       console.log('Length:', useCasesArray.length);
       console.log('======================');
+      */
 
       if (useCasesArray.length < 4) {
         throw new Error(`Must have 4-6 use cases. Only got ${useCasesArray.length}. Raw: "${fields.use_cases}"`);

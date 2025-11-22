@@ -1,21 +1,22 @@
-# Payment Integration Walkthrough
+# Code Cleanup for Production Walkthrough
 
-I have integrated the payment flow to charge $14 for the premium features. Here are the changes made:
+## Cleanup Actions
 
-## 1. UI Updates
-- Updated `components/whop/PaymentModal.tsx` to explicitly display **"$14 one-time"** in the plan description. This ensures users know the price before purchasing.
+### Deleted Files
+- `app/api/test-supabase/route.ts`: Removed test route used for Supabase connection verification.
 
-## 2. Configuration
-- Updated `lib/config.ts` to include a comment specifying that the `PLAN_ID` should correspond to the $14 plan in the Whop Dashboard.
-
-## 3. Logic Fixes
-- Modified `components/nexa/stages/IdeaInput.tsx` to correctly handle the payment success event.
-- Destructured `markAsPaid` from `usePaymentStatus` and called it in `handlePaymentSuccess`. This ensures that the application state and local storage are updated immediately after a successful payment, preventing the payment modal from reappearing unnecessarily.
+### Modified Files (Debug Logs Removed)
+- `app/api/generate-product/route.ts`: Commented out generation progress logs and response analysis logs.
+- `app/api/refine-idea/route.ts`: Commented out raw Gemini response logs and retry logs.
+- `app/api/build-product-spec/route.ts`: Commented out build progress logs and debug logs for pain points/use cases.
+- `components/whop/useWhopEmbeddedAuth.tsx`: Commented out fallback auth logs.
+- `components/whop/PaymentModal.tsx`: Commented out payment completion logs.
 
 ## Verification
-- **UI**: The payment modal now shows the price.
-- **Flow**: When a user submits an idea, if they haven't paid, the modal appears. Upon successful payment, the `markAsPaid` function is called, updating the status, closing the modal, and proceeding with the idea submission.
+- Verified `test-supabase` route is deleted.
+- Verified `console.log` statements are commented out in `generate-product` route.
+- Skipped automated build/lint tests as per user request.
 
-## Next Steps for User
-- Create a plan in the Whop Dashboard with a price of $14.
-- Copy the Plan ID and paste it into `lib/config.ts` in the `PLAN_ID` field.
+## Next Steps
+- Deploy to production.
+- Monitor logs for any `console.error` that might indicate issues.

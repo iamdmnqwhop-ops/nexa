@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     try {
       await whopsdk.verifyUserToken(await headers());
     } catch (e) {
-      console.log('Auth check failed in generate-product');
+      // console.log('Auth check failed in generate-product');
       // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     const prompt = GENERATION_PROMPT + JSON.stringify(product_spec, null, 2);
 
-    console.log('Generating product...');
+    // console.log('Generating product...');
     let result, response;
     let text = '';
     let retryCount = 0;
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         result = await model.generateContent(prompt);
         response = await result.response;
         text = response.text();
-        console.log(`✓ Generation successful on attempt ${retryCount + 1}`);
+        // console.log(`✓ Generation successful on attempt ${retryCount + 1}`);
         break; // Success, exit retry loop
       } catch (error) {
         retryCount++;
@@ -91,12 +91,12 @@ export async function POST(request: NextRequest) {
 
         // Wait before retrying (exponential backoff)
         const delay = Math.pow(2, retryCount) * 1000;
-        console.log(`Retrying in ${delay}ms...`);
+        // console.log(`Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
 
-    // Log the raw response for debugging
+    /*
     console.log('Raw Gemini response length:', text.length);
     console.log('Response preview:', text.substring(0, 500));
     console.log('Response length:', text.length);
@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
       endsProperly,
       startsProperly
     });
+    */
 
     // Parse structured text response
     let productData;
@@ -181,7 +182,7 @@ export async function POST(request: NextRequest) {
         Sections: sections
       };
 
-      console.log(`Parsed ${sections.length} sections from text response`);
+      // console.log(`Parsed ${sections.length} sections from text response`);
 
     } catch (parseError) {
       console.error('Text parsing error:', (parseError as Error).message);

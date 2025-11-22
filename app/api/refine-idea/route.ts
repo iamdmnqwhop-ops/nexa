@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       const { userId: whopUserId } = await whopsdk.verifyUserToken(await headers());
       userId = whopUserId;
     } catch (authError) {
-      console.log('Auth check failed, proceeding as anonymous/dev for now (or handle as 401)');
+      // console.log('Auth check failed, proceeding as anonymous/dev for now (or handle as 401)');
       // For strict production: return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
         // Wait before retrying (exponential backoff)
         const delay = Math.pow(2, retryCount) * 1000;
-        console.log(`Retrying in ${delay}ms...`);
+        // console.log(`Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     let refinementData = { Concepts: [] as any[] };
 
     try {
-      console.log("Raw Gemini response:", text); // Debug logging
+      // console.log("Raw Gemini response:", text); // Debug logging
 
       // Regex to split by options (A, B, C, D)
       const optionRegex = /REFINED OPTION ([A-D]):([\s\S]*?)(?=REFINED OPTION [A-D]:|$)/g;

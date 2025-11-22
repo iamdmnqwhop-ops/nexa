@@ -69,7 +69,7 @@ export const WhopEmbeddedAuthProvider = ({ children }: WhopEmbeddedAuthProviderP
             });
           }
         } catch (error) {
-          console.log('Using fallback embedded auth');
+          // console.log('Using fallback embedded auth');
           // Fallback for development/testing
           setUser({
             id: 'embedded-user-fallback',

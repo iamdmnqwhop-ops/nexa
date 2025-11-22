@@ -46,3 +46,8 @@ next-env.d.ts
 # editors
 .vscode/
 .zed/
+
+# guides
+deployment_guide.md
+permissions_guide.md
+implementation_plan.md

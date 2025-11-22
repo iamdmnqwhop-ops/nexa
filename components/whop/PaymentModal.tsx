@@ -18,7 +18,7 @@ export const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }: PaymentModal
   if (!isOpen) return null;
 
   const handlePaymentComplete = (planId: string, receiptId?: string) => {
-    console.log('Payment completed:', { planId, receiptId });
+    // console.log('Payment completed:', { planId, receiptId });
     onPaymentSuccess();
   };
 
