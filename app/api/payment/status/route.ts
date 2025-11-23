@@ -31,8 +31,8 @@ export async function GET() {
         if (validMembership) {
             return Response.json({
                 hasPaid: true,
-                paymentDate: validMembership.created_at,
-                planId: validMembership.plan_id
+                paymentDate: (validMembership as any).created_at,
+                planId: (validMembership as any).plan_id
             });
         }
 
