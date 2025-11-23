@@ -1,8 +1,7 @@
 'use client';
 
-import { Card } from '@whop/react/components';
 import { WhopCheckoutEmbed } from '@whop/checkout/react';
-import { Crown, Sparkles } from 'lucide-react';
+import { Crown, Sparkles, X, Check } from 'lucide-react';
 import { CONFIG } from '@/lib/config';
 
 interface PaymentModalProps {
@@ -23,153 +22,72 @@ export const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }: PaymentModal
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="nexa-whop-glass nexa-whop-transition-slow relative overflow-hidden w-full max-w-md">
-        <Card
-          className="relative"
-          style={{
-            backgroundColor: 'rgba(17, 17, 17, 0.8)',
-            backdropFilter: 'blur(20px) saturate(190%) contrast(90%) brightness(80%)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            boxShadow: '0 0 40px rgba(255, 255, 255, 0.05)',
-            padding: '0'
-          }}
-        >
-          {/* Header */}
-          <div style={{ padding: '24px', position: 'relative', zIndex: 1 }}>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(251, 191, 36, 0.05))',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(251, 191, 36, 0.2)',
-                    boxShadow: '0 4px 20px rgba(251, 191, 36, 0.1)'
-                  }}
-                >
-                  <Crown className="h-6 w-6" style={{ color: '#fbbf24' }} />
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-4xl bg-black/90 backdrop-blur-xl border border-white/10 rounded-3xl p-0 shadow-2xl relative overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          {/* Left Column: Info */}
+          <div className="p-8 relative z-10 flex flex-col">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400/20 to-amber-400/5 border border-amber-400/20 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.1)]">
+                  <Crown className="h-6 w-6 text-amber-400" />
                 </div>
                 <div>
-                  <h2
-                    className="font-bold"
-                    style={{
-                      color: '#ffffff',
-                      fontSize: '20px',
-                      lineHeight: '1.2',
-                      marginBottom: '4px'
-                    }}
-                  >
-                    NEXA Premium
-                  </h2>
-                  <p
-                    className="text-sm"
-                    style={{
-                      color: 'rgba(255, 255, 255, 0.6)',
-                      lineHeight: '1.4'
-                    }}
-                  >
-                    Unlimited access to refine ideas • $14 one-time
-                  </p>
+                  <h2 className="text-xl font-bold text-white leading-tight">NEXA Premium</h2>
+                  <p className="text-sm text-gray-400">$14 one-time payment</p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="nexa-whop-transition rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  width: '32px',
-                  height: '32px',
-                  cursor: 'pointer',
-                  color: 'rgba(255, 255, 255, 0.6)'
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M2.343 2.343a1 1 0 011.414 0L8 6.586l4.243-4.243a1 1 0 111.414 1.414L9.414 8l4.243 4.243a1 1 0 01-1.414 1.414L8 9.414l-4.243 4.243a1 1 0 01-1.414-1.414L6.586 8 2.343 3.757a1 1 0 010-1.414z" />
-                </svg>
-              </button>
             </div>
 
-            {/* Features Card */}
-            <div
-              className="nexa-whop-glass-subtle"
-              style={{
-                padding: '16px',
-                borderRadius: '12px',
-                marginBottom: '24px',
-                background: 'rgba(0, 123, 255, 0.04)',
-                border: '1px solid rgba(0, 123, 255, 0.12)',
-                backdropFilter: 'blur(8px)'
-              }}
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-4 w-4" style={{ color: '#fbbf24' }} />
-                <span
-                  className="font-medium text-sm"
-                  style={{ color: '#ffffff' }}
-                >
-                  What you get:
-                </span>
+            <div className="bg-white/5 border border-white/5 rounded-2xl p-6 flex-grow">
+              <div className="flex items-center gap-2 mb-6">
+                <Sparkles className="h-4 w-4 text-amber-400" />
+                <span className="text-sm font-medium text-white">What's included:</span>
               </div>
-              <ul className="space-y-2" style={{ margin: 0, padding: 0 }}>
+              <ul className="space-y-4">
                 {[
                   'Unlimited AI product generations',
-                  'All idea refinement features',
-                  'Export in TXT format',
+                  'Advanced idea refinement',
+                  'Export in multiple formats',
                   'Priority support & updates'
-                ].map((feature, index) => (
-                  <li key={index} className="flex items-center gap-2 text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                    <span
-                      style={{
-                        color: '#10b981',
-                        fontSize: '14px',
-                        fontWeight: '500'
-                      }}
-                    >
-                      ✓
-                    </span>
-                    <span>{feature}</span>
+                ].map((feature, i) => (
+                  <li key={i} className="flex items-center gap-3 text-sm text-gray-300">
+                    <div className="w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                      <Check className="h-3 w-3 text-green-400" />
+                    </div>
+                    {feature}
                   </li>
                 ))}
               </ul>
             </div>
           </div>
 
-          {/* Whop Embedded Checkout */}
-          <div style={{
-            padding: '0 24px 24px 24px',
-            position: 'relative',
-            zIndex: 1
-          }}>
-            <WhopCheckoutEmbed
-              planId={PLAN_ID}
-              theme="dark"
-              onComplete={handlePaymentComplete}
-              style={{
-                container: {
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: 'white'
-                }
-              }}
-              themeOptions={{
-                accentColor: 'tomato'
-              }}
-            />
-          </div>
+          {/* Right Column: Checkout */}
+          <div className="p-6 bg-white/[0.02] border-l border-white/10 relative z-10 flex flex-col">
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={onClose}
+                className="p-2 rounded-xl hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-          {/* Whop Inner Glow */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-60"
-            style={{
-              background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.02) 0%, transparent 70%)',
-              borderRadius: '16px'
-            }}
-          />
-        </Card>
+            <div className="flex-grow flex items-center justify-center">
+              <WhopCheckoutEmbed
+                planId={PLAN_ID}
+                theme="dark"
+                onComplete={handlePaymentComplete}
+                themeOptions={{
+                  accentColor: '#fbbf24' // Amber-400 to match theme
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Background Glow */}
+        <div className="absolute top-0 left-0 w-1/2 h-full bg-gradient-to-br from-amber-400/5 to-transparent pointer-events-none" />
       </div>
     </div>
   );

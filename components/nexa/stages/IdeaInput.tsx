@@ -24,7 +24,7 @@ export const IdeaInput = ({ onSubmit, onCancel, isGenerating }: IdeaInputProps) 
 
   // DEV MODE BYPASS - Remove this in production
   const isDevelopment = process.env.NODE_ENV === 'development';
-  const devBypassPayment = isDevelopment; // Set to false to test payment flow in dev
+  const devBypassPayment = false; // Set to false to test payment flow in dev
 
   const [greeting, setGreeting] = useState('Good morning');
 
