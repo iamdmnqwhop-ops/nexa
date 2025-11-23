@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@whop/react/components';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
-export default function AuthCallback() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -97,13 +97,13 @@ export default function AuthCallback() {
                 background: status === 'success'
                   ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1))'
                   : status === 'error'
-                  ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1))'
-                  : 'linear-gradient(135deg, rgba(0, 123, 255, 0.2), rgba(0, 123, 255, 0.1))',
+                    ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1))'
+                    : 'linear-gradient(135deg, rgba(0, 123, 255, 0.2), rgba(0, 123, 255, 0.1))',
                 border: status === 'success'
                   ? '1px solid rgba(16, 185, 129, 0.3)'
                   : status === 'error'
-                  ? '1px solid rgba(239, 68, 68, 0.3)'
-                  : '1px solid rgba(0, 123, 255, 0.3)'
+                    ? '1px solid rgba(239, 68, 68, 0.3)'
+                    : '1px solid rgba(0, 123, 255, 0.3)'
               }}
             >
               {status === 'loading' && (
@@ -140,5 +140,17 @@ export default function AuthCallback() {
         />
       </Card>
     </div>
+  );
+}
+
+export default function AuthCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0A' }}>
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
+    }>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }
