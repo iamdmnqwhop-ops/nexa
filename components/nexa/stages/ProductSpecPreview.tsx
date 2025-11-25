@@ -30,7 +30,9 @@ export const ProductSpecPreview = ({
   const devBypassPayment = false; // Always enforce payment check
 
   const handleGenerate = () => {
-    if (!hasPaid && !isPaymentChecking && !devBypassPayment) {
+    if (isPaymentChecking) return; // Prevent action while checking
+
+    if (!hasPaid && !devBypassPayment) {
       setShowPaymentModal(true);
       return;
     }
@@ -166,7 +168,7 @@ export const ProductSpecPreview = ({
         <div className="bg-black/80 backdrop-blur-xl border border-white/10 p-3 rounded-full shadow-2xl pointer-events-auto max-w-2xl w-full mx-6">
           <button
             onClick={handleGenerate}
-            disabled={isGenerating}
+            disabled={isGenerating || isPaymentChecking}
             className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold py-4 px-8 rounded-full hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-2xl shadow-blue-500/50"
           >
             {isGenerating ? (
