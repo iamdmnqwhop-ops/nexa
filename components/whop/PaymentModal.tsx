@@ -73,13 +73,20 @@ export const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }: PaymentModal
               </button>
             </div>
 
-            <div className="flex-grow flex items-center justify-center">
+            {/* Whop Embedded Checkout */}
+            <div style={{
+              padding: '0 24px 24px 24px',
+              position: 'relative',
+              zIndex: 1,
+              maxHeight: '600px', // Constrain height
+              overflowY: 'auto'   // Allow scrolling if needed
+            }}>
               <WhopCheckoutEmbed
                 planId={PLAN_ID}
                 theme="dark"
                 onComplete={handlePaymentComplete}
                 themeOptions={{
-                  accentColor: '#fbbf24' // Amber-400 to match theme
+                  accentColor: 'tomato'
                 }}
               />
             </div>

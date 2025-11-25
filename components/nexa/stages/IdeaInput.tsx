@@ -48,10 +48,10 @@ export const IdeaInput = ({ onSubmit, onCancel, isGenerating }: IdeaInputProps) 
     if (!idea.trim()) return;
 
     // HIGH-CONVERSION PLACEMENT: Show payment immediately after idea submission
-    if (!hasPaid && !isPaymentChecking && !devBypassPayment) {
-      setShowPaymentModal(true);
-      return;
-    }
+    // if (!hasPaid && !isPaymentChecking && !devBypassPayment) {
+    //   setShowPaymentModal(true);
+    //   return;
+    // }
 
     // Call onSubmit which will trigger the flow (useNexaFlow handles the API call)
     onSubmit(idea.trim());
@@ -134,7 +134,7 @@ export const IdeaInput = ({ onSubmit, onCancel, isGenerating }: IdeaInputProps) 
               </div>
               <button
                 onClick={handleSubmit}
-                disabled={!idea.trim() || isGenerating || (!hasPaid && !isPaymentChecking && !devBypassPayment)}
+                disabled={!idea.trim() || isGenerating}
                 className="p-2.5 rounded-xl bg-white/10 hover:bg-blue-600 text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group/btn"
               >
                 {isGenerating ? (
@@ -150,14 +150,14 @@ export const IdeaInput = ({ onSubmit, onCancel, isGenerating }: IdeaInputProps) 
         </div>
 
         {/* Payment Required Indicator */}
-        {!hasPaid && !isPaymentChecking && !devBypassPayment && (
+        {/* {!hasPaid && !isPaymentChecking && !devBypassPayment && (
           <div className="flex justify-center">
             <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-base">
               <span>🔒</span>
               <span>Unlock full access for $14</span>
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Refinement Loading Overlay */}

@@ -1,7 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { ProductSpec, ConceptData } from '../hooks/useNexaFlow';
-import { Play, Sparkles } from 'lucide-react';
+import { Play, Sparkles, Lock } from 'lucide-react';
+import { useWhopEmbeddedAuth } from '../../whop/useWhopEmbeddedAuth';
+import { usePaymentStatus } from '../../whop/usePaymentStatus';
+import { PaymentModal } from '../../whop/PaymentModal';
 
 interface ProductSpecPreviewProps {
   productSpec: ProductSpec;
@@ -18,6 +22,26 @@ export const ProductSpecPreview = ({
   onBack,
   isGenerating
 }: ProductSpecPreviewProps) => {
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const { user } = useWhopEmbeddedAuth();
+  const { hasPaid, isChecking: isPaymentChecking, markAsPaid } = usePaymentStatus(user?.id);
+
+  // DEV MODE BYPASS - Remove this in production
+  const devBypassPayment = false; // Always enforce payment check
+
+  const handleGenerate = () => {
+    if (!hasPaid && !isPaymentChecking && !devBypassPayment) {
+      setShowPaymentModal(true);
+      return;
+    }
+    onGenerate();
+  };
+
+  const handlePaymentSuccess = () => {
+    markAsPaid();
+    setShowPaymentModal(false);
+    onGenerate();
+  };
   return (
     <div className="min-h-screen flex flex-col relative">
       {/* Header Section - Centered & Large */}
@@ -141,7 +165,7 @@ export const ProductSpecPreview = ({
       <div className="fixed bottom-8 left-0 right-0 flex justify-center z-50 pointer-events-none">
         <div className="bg-black/80 backdrop-blur-xl border border-white/10 p-3 rounded-full shadow-2xl pointer-events-auto max-w-2xl w-full mx-6">
           <button
-            onClick={onGenerate}
+            onClick={handleGenerate}
             disabled={isGenerating}
             className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold py-4 px-8 rounded-full hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-2xl shadow-blue-500/50"
           >
@@ -152,16 +176,34 @@ export const ProductSpecPreview = ({
               </>
             ) : (
               <>
-                <Play className="h-5 w-5" />
+                {!hasPaid && !isPaymentChecking && !devBypassPayment ? (
+                  <Lock className="h-5 w-5" />
+                ) : (
+                  <Play className="h-5 w-5" />
+                )}
                 <div className="text-left">
-                  <div className="font-bold text-lg">Generate Complete Product</div>
-                  <div className="text-xs opacity-90">Ready to build • 7 comprehensive sections</div>
+                  <div className="font-bold text-lg">
+                    {!hasPaid && !isPaymentChecking && !devBypassPayment
+                      ? "Unlock & Generate Product"
+                      : "Generate Complete Product"}
+                  </div>
+                  <div className="text-xs opacity-90">
+                    {!hasPaid && !isPaymentChecking && !devBypassPayment
+                      ? "Get full access for $14"
+                      : "Ready to build • 7 comprehensive sections"}
+                  </div>
                 </div>
               </>
             )}
           </button>
         </div>
       </div>
+
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 };
