@@ -29,7 +29,8 @@ export const usePaymentStatus = (userId?: string) => {
           isChecking: false,
           paymentDate: parsed.paymentDate,
         });
-        return;
+        // We use stored status for immediate UI feedback, but we ALWAYS verify with server
+        // so we do NOT return here.
       }
 
       // If no stored status, check with server

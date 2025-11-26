@@ -29,6 +29,8 @@ export const ProductSpecPreview = ({
   // DEV MODE BYPASS - Remove this in production
   const devBypassPayment = false; // Always enforce payment check
 
+  // console.log('ProductSpecPreview Payment Check:', { hasPaid, isPaymentChecking, devBypassPayment });
+
   const handleGenerate = () => {
     if (isPaymentChecking) return; // Prevent action while checking
 
